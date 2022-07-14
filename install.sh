@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -eu pipefail
+set -euo pipefail
 
 unset HAVE_SUDO_ACCESS # unset this from the environment
 
@@ -13,24 +13,42 @@ log() {
   printf "%s\n" "$@"
 }
 
+log_step() {
+  local step_decorator="===================================================="
+  local step_title="*** $@ ***"
+  local fill_len=$(((${#step_decorator}-${#step_title})/2+${#step_title}))
+
+  log
+  log "$step_decorator"
+  printf "%${fill_len}s\n" "$step_title"
+  log "$step_decorator"
+}
+
+log_action() {
+  log
+  printf "%b\n" "\033[1m===> $@\033[0m"
+}
+
 ask() {
   read -rp "$1: " "$2";
 }
 
 # COMMAND LINE TOOLS
-
-log "Checking if Command Line Tools are installed️"
+log_step " Prerequisites "
+log_action "Checking if Command Line Tools are installed️"
 set +eo pipefail
 xcode-select --install 2>&1 | grep installed >/dev/null
 if [[ $? -ne 0 ]]; then
   log "Installing Command Line Tools..."
   ask "Press enter key after command line tools has finished to continue..." "CLT_INSTALLED"
+else
+  log "Command Line Tools already installed"
 fi
 set -eo pipefail
 
 # SUDO ACCESS
 
-log 'Checking for `sudo` access (which may request your password)...'
+log_action 'Checking for `sudo` access (which may request your password)...'
 /usr/bin/sudo -v && /usr/bin/sudo -l mkdir &>/dev/null
 if [[ $? -ne 0 ]]
 then
@@ -39,23 +57,14 @@ fi
 
 
 # DOTFILES
-log
-log "====================="
-log " Installing dotfiles "
-log "====================="
-log
+log_step " Installing dotfiles "
 export DOTFILES_PATH="$HOME/.dotfiles"
 log "Cloning into: '$DOTFILES_PATH'"
 
-# To test that git is installed (if not macOS will prompt an installer)
 git --version
-
 # git clone https://github.com/christian-ramos/dotfiles.git "$DOTFILES_PATH"
 
 # HOMBREW
-log
-log "===================="
-log " Installing hombrew "
-log "===================="
-log
+log_step " Installing hombrew "
+
 NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
