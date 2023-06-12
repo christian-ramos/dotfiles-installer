@@ -32,9 +32,10 @@ log_action() {
 ask() {
   read -rp "$1: " "$2";
 }
-
-# COMMAND LINE TOOLS
+# PREREQUISITES
 log_step " Prerequisites "
+
+# PREREQUISITES -> COMMAND LINE TOOLS
 log_action "Checking if Command Line Tools are installed️"
 set +eo pipefail
 xcode-select --install 2>&1 | grep installed >/dev/null
@@ -46,14 +47,26 @@ else
 fi
 set -eo pipefail
 
-# SUDO ACCESS
-
+# PREREQUISITES -> SUDO ACCESS
 log_action 'Checking for `sudo` access (which may request your password)...'
 /usr/bin/sudo -v && /usr/bin/sudo -l mkdir &>/dev/null
 if [[ $? -ne 0 ]]
 then
   abort "Need sudo access on macOS (e.g. the user ${USER} needs to be an Administrator)!"
 fi
+
+# PREREQUISITES -> HOMEBREW
+which -s brew
+if [[ $? != 0 ]] ; then
+  # Install homebrew
+  log_action "Installing homebrew..."
+  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+else
+  # Update homebrew
+  log_action "Updating homebrew..."
+  brew update
+fi
+
 
 
 # DOTFILES
@@ -63,8 +76,3 @@ log "Cloning into: '$DOTFILES_PATH'"
 
 git --version
 # git clone https://github.com/christian-ramos/dotfiles.git "$DOTFILES_PATH"
-
-# HOMBREW
-log_step " Installing hombrew "
-
-NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
